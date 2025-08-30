@@ -1,5 +1,8 @@
 package qodo.ru.servicebooking.domain.exception;
 
+import lombok.Getter;
+
+@Getter
 public class DuplicateRequestException extends BookingDomainException {
     private final String idempotencyKey;
 
@@ -11,7 +14,4 @@ public class DuplicateRequestException extends BookingDomainException {
         this.idempotencyKey = idempotencyKey;
     }
 
-    public String getIdempotencyKey() {
-        return idempotencyKey;
-    }
 }

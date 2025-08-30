@@ -1,5 +1,8 @@
 package qodo.ru.servicebooking.domain.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum BookingSource {
 
     /**
@@ -31,10 +34,6 @@ public enum BookingSource {
 
     BookingSource(String value) {
         this.value = value;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     public static BookingSource fromValue(String value) {
