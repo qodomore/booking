@@ -1,0 +1,57 @@
+{
+  "name": "RMS - Resource Management System",
+  "short_name": "RMS",
+  "description": "Система управления ресурсами для салонов красоты",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3b82f6",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Календарь записей",
+      "short_name": "Календарь",
+      "description": "Просмотр записей и расписания",
+      "url": "/?tab=calendar",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Управление мастерами",
+      "short_name": "Мастера",
+      "description": "Добавление и редактирование мастеров",
+      "url": "/?tab=resources",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "categories": ["business", "productivity", "lifestyle"]
+}
