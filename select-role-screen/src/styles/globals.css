@@ -1,0 +1,257 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Owner DS Color Palette */
+  --owner-bg: #fafbfc;
+  --owner-surface-base: #ffffff;
+  --owner-surface-raised: #f8f9fa;
+  --owner-surface-soft: #f1f3f5;
+  --owner-surface-soft-2: #e9ecef;
+  --owner-surface-soft-3: #dee2e6;
+  --owner-surface-disabled: #f8f9fa;
+  
+  --owner-text-primary: #212529;
+  --owner-text-secondary: #6c757d;
+  --owner-text-disabled: #adb5bd;
+  --owner-text-link: #0d6efd;
+  --owner-text-link-hover: #0a58ca;
+  
+  --owner-primary: #0d6efd;
+  --owner-primary-soft: rgba(13, 110, 253, 0.1);
+  --owner-on-primary: #ffffff;
+  
+  --owner-border-neutral: #dee2e6;
+  --owner-border-primary: #0d6efd;
+  
+  --owner-btn-disabled: #e9ecef;
+  --owner-elevation-card: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  
+  /* Map to Tailwind variables */
+  --background: var(--owner-bg);
+  --foreground: var(--owner-text-primary);
+  --card: var(--owner-surface-base);
+  --card-foreground: var(--owner-text-primary);
+  --popover: var(--owner-surface-base);
+  --popover-foreground: var(--owner-text-primary);
+  --primary: var(--owner-primary);
+  --primary-foreground: var(--owner-on-primary);
+  --secondary: var(--owner-surface-raised);
+  --secondary-foreground: var(--owner-text-primary);
+  --muted: var(--owner-surface-soft);
+  --muted-foreground: var(--owner-text-secondary);
+  --accent: var(--owner-surface-raised);
+  --accent-foreground: var(--owner-text-primary);
+  --destructive: #dc3545;
+  --destructive-foreground: #ffffff;
+  --border: var(--owner-border-neutral);
+  --input: transparent;
+  --input-background: var(--owner-surface-soft);
+  --switch-background: var(--owner-surface-soft-2);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: var(--owner-primary);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: var(--owner-surface-base);
+  --sidebar-foreground: var(--owner-text-primary);
+  --sidebar-primary: var(--owner-primary);
+  --sidebar-primary-foreground: var(--owner-on-primary);
+  --sidebar-accent: var(--owner-surface-raised);
+  --sidebar-accent-foreground: var(--owner-text-primary);
+  --sidebar-border: var(--owner-border-neutral);
+  --sidebar-ring: var(--owner-primary);
+}
+
+.dark {
+  /* Owner DS Dark Theme */
+  --owner-bg: #1a1d21;
+  --owner-surface-base: #212529;
+  --owner-surface-raised: #2d3339;
+  --owner-surface-soft: #343a40;
+  --owner-surface-soft-2: #495057;
+  --owner-surface-soft-3: #6c757d;
+  --owner-surface-disabled: #2d3339;
+  
+  --owner-text-primary: #f8f9fa;
+  --owner-text-secondary: #adb5bd;
+  --owner-text-disabled: #6c757d;
+  --owner-text-link: #6ea8fe;
+  --owner-text-link-hover: #9ec5fe;
+  
+  --owner-primary: #6ea8fe;
+  --owner-primary-soft: rgba(110, 168, 254, 0.15);
+  --owner-on-primary: #000000;
+  
+  --owner-border-neutral: #495057;
+  --owner-border-primary: #6ea8fe;
+  
+  --owner-btn-disabled: #343a40;
+  --owner-elevation-card: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  
+  /* Map to Tailwind variables */
+  --background: var(--owner-bg);
+  --foreground: var(--owner-text-primary);
+  --card: var(--owner-surface-base);
+  --card-foreground: var(--owner-text-primary);
+  --popover: var(--owner-surface-base);
+  --popover-foreground: var(--owner-text-primary);
+  --primary: var(--owner-primary);
+  --primary-foreground: var(--owner-on-primary);
+  --secondary: var(--owner-surface-raised);
+  --secondary-foreground: var(--owner-text-primary);
+  --muted: var(--owner-surface-soft);
+  --muted-foreground: var(--owner-text-secondary);
+  --accent: var(--owner-surface-raised);
+  --accent-foreground: var(--owner-text-primary);
+  --destructive: #dc3545;
+  --destructive-foreground: #ffffff;
+  --border: var(--owner-border-neutral);
+  --input: var(--owner-surface-soft);
+  --ring: var(--owner-primary);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: var(--owner-surface-base);
+  --sidebar-foreground: var(--owner-text-primary);
+  --sidebar-primary: var(--owner-primary);
+  --sidebar-primary-foreground: var(--owner-on-primary);
+  --sidebar-accent: var(--owner-surface-raised);
+  --sidebar-accent-foreground: var(--owner-text-primary);
+  --sidebar-border: var(--owner-border-neutral);
+  --sidebar-ring: var(--owner-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Owner DS specific utilities */
+  --color-owner-bg: var(--owner-bg);
+  --color-owner-surface-base: var(--owner-surface-base);
+  --color-owner-surface-raised: var(--owner-surface-raised);
+  --color-owner-surface-soft: var(--owner-surface-soft);
+  --color-owner-surface-soft-2: var(--owner-surface-soft-2);
+  --color-owner-surface-soft-3: var(--owner-surface-soft-3);
+  --color-owner-text-primary: var(--owner-text-primary);
+  --color-owner-text-secondary: var(--owner-text-secondary);
+  --color-owner-text-link: var(--owner-text-link);
+  --color-owner-primary: var(--owner-primary);
+  --color-owner-primary-soft: var(--owner-primary-soft);
+  --color-owner-border-neutral: var(--owner-border-neutral);
+  --color-owner-border-primary: var(--owner-border-primary);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
