@@ -210,7 +210,7 @@ export function GapsToday({
 
   return (
     <>
-      <Card className="p-4 bg-gradient-to-r from-background to-accent/5 border border-border/50">
+      <Card className="p-4 bg-gradient-to-r from-background to-accent/5 border border-border/50 overflow-visible">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -251,14 +251,15 @@ export function GapsToday({
         )}
 
         {/* Slots Rail */}
-        <div className="relative">
-          <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-hide">
+        <div className="relative py-2">
+          <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-4 pt-2 -mx-1 px-1 scrollbar-hide">
             {freeSlots.slice(0, visibleSlots).map((slot, index) => (
               <motion.div
                 key={slot.id}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
+                className="relative z-0 hover:z-20"
               >
                 <SlotMiniCard
                   time={slot.time}

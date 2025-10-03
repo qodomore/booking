@@ -186,6 +186,24 @@ export function TeamDashboardScreen({
   });
   const [isInviting, setIsInviting] = useState(false);
   const [teamMembers, setTeamMembers] = useState(mockTeamMembers);
+  
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'staff'
+  });
+  
+  // Disable/Deactivate dialog state
+  const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
+  const [memberToDisable, setMemberToDisable] = useState<TeamMember | null>(null);
+  
+  // Remove dialog state
+  const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
 
   const t = texts[locale];
 
@@ -281,6 +299,96 @@ export function TeamDashboardScreen({
       toast.error(t.inviteError);
     } finally {
       setIsInviting(false);
+    }
+  };
+  
+  const handleEditClick = (member: TeamMember) => {
+    setEditingMember(member);
+    setEditForm({
+      name: member.name,
+      email: member.email,
+      phone: member.phone || '',
+      role: member.role
+    });
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleEditSave = async () => {
+    if (!editingMember) return;
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setTeamMembers(prev => prev.map(member => 
+        member.id === editingMember.id
+          ? { ...member, ...editForm }
+          : member
+      ));
+      
+      setIsEditDialogOpen(false);
+      setEditingMember(null);
+      toast.success(locale === 'ru' ? 'Данные обновлены' : 'Member updated');
+    } catch (error) {
+      toast.error(locale === 'ru' ? 'Ошибка обновления' : 'Update error');
+    }
+  };
+  
+  const handleDisableClick = (member: TeamMember) => {
+    setMemberToDisable(member);
+    setIsDisableDialogOpen(true);
+  };
+  
+  const handleDisableConfirm = async () => {
+    if (!memberToDisable) return;
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setTeamMembers(prev => prev.map(member => 
+        member.id === memberToDisable.id
+          ? { ...member, status: 'disabled' }
+          : member
+      ));
+      
+      setIsDisableDialogOpen(false);
+      setMemberToDisable(null);
+      toast.success(locale === 'ru' ? 'Пользователь отключен' : 'Member disabled');
+    } catch (error) {
+      toast.error(locale === 'ru' ? 'Ошибка отключения' : 'Disable error');
+    }
+  };
+  
+  const handleRemoveClick = (member: TeamMember) => {
+    setMemberToRemove(member);
+    setIsRemoveDialogOpen(true);
+  };
+  
+  const handleRemoveConfirm = async () => {
+    if (!memberToRemove) return;
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setTeamMembers(prev => prev.filter(member => member.id !== memberToRemove.id));
+      
+      setIsRemoveDialogOpen(false);
+      setMemberToRemove(null);
+      toast.success(locale === 'ru' ? 'Пользователь удален' : 'Member removed');
+    } catch (error) {
+      toast.error(locale === 'ru' ? 'Ошибка удаления' : 'Remove error');
+    }
+  };
+  
+  const handleResendInvite = async (member: TeamMember) => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success(locale === 'ru' ? 'Приглашение отправлено повторно' : 'Invitation resent');
+    } catch (error) {
+      toast.error(locale === 'ru' ? 'Ошибка отправки' : 'Send error');
     }
   };
 
@@ -550,15 +658,24 @@ export function TeamDashboardScreen({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>{t.edit}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditClick(member)}>
+                              {t.edit}
+                            </DropdownMenuItem>
                             {member.status === 'invited' && (
-                              <DropdownMenuItem>{t.resendInvite}</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleResendInvite(member)}>
+                                {t.resendInvite}
+                              </DropdownMenuItem>
                             )}
                             {member.status !== 'disabled' && (
-                              <DropdownMenuItem>{t.disable}</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDisableClick(member)}>
+                                {t.disable}
+                              </DropdownMenuItem>
                             )}
                             {member.role !== 'owner' && (
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => handleRemoveClick(member)}
+                              >
                                 {t.remove}
                               </DropdownMenuItem>
                             )}
@@ -579,6 +696,227 @@ export function TeamDashboardScreen({
           </div>
         )}
       </Card>
+      
+      {/* Edit Member Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {locale === 'ru' ? 'Редактировать сотрудника' : 'Edit Team Member'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">
+                {locale === 'ru' ? 'Имя' : 'Name'}
+              </Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={locale === 'ru' ? 'Введите имя' : 'Enter name'}
+              />
+            </div>
+            
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-email" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email
+              </Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="email@example.com"
+              />
+            </div>
+            
+            {/* Phone */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone" className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                {locale === 'ru' ? 'Телефон' : 'Phone'}
+              </Label>
+              <Input
+                id="edit-phone"
+                type="tel"
+                value={editForm.phone}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+7 (999) 123-45-67"
+              />
+            </div>
+            
+            {/* Role */}
+            <div className="space-y-3">
+              <Label>{locale === 'ru' ? 'Роль' : 'Role'}</Label>
+              <RadioGroup 
+                value={editForm.role} 
+                onValueChange={(value) => setEditForm(prev => ({ ...prev, role: value }))}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="owner" id="edit-owner" />
+                  <Label htmlFor="edit-owner" className="flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-yellow-600" />
+                    {t.owner}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="admin" id="edit-admin" />
+                  <Label htmlFor="edit-admin" className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-blue-600" />
+                    {t.admin}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="staff" id="edit-staff" />
+                  <Label htmlFor="edit-staff" className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-600" />
+                    {t.staff}
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отмена' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleEditSave}
+                className="flex-1 elegant-button"
+              >
+                {locale === 'ru' ? 'Сохранить' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Disable Member Dialog */}
+      <Dialog open={isDisableDialogOpen} onOpenChange={setIsDisableDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              {locale === 'ru' ? 'Отключить сотрудника' : 'Disable Team Member'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              {locale === 'ru' 
+                ? `Вы уверены, что хотите отключить доступ для ${memberToDisable?.name}? Пользователь не сможет войти в систему.`
+                : `Are you sure you want to disable access for ${memberToDisable?.name}? The user will not be able to log in.`
+              }
+            </p>
+            
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">{memberToDisable?.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{memberToDisable?.email}</span>
+              </div>
+              {memberToDisable?.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{memberToDisable.phone}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDisableDialogOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отмена' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleDisableConfirm}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {locale === 'ru' ? 'Отключить' : 'Disable'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Remove Member Dialog */}
+      <Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              {locale === 'ru' ? 'Удалить сотрудника' : 'Remove Team Member'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              {locale === 'ru' 
+                ? `Вы уверены, что хотите удалить ${memberToRemove?.name} из команды? Это действие нельзя отменить.`
+                : `Are you sure you want to remove ${memberToRemove?.name} from the team? This action cannot be undone.`
+              }
+            </p>
+            
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-4 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="font-medium text-red-900 dark:text-red-100">{memberToRemove?.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="text-sm text-red-800 dark:text-red-200">{memberToRemove?.email}</span>
+              </div>
+              {memberToRemove?.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-sm text-red-800 dark:text-red-200">{memberToRemove.phone}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 p-3 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                {locale === 'ru' 
+                  ? '⚠️ Все данные пользователя будут сохранены, но он потеряет доступ к системе.'
+                  : '⚠️ All user data will be preserved, but they will lose access to the system.'
+                }
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsRemoveDialogOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отмена' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleRemoveConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                {locale === 'ru' ? 'Удалить' : 'Remove'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

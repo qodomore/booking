@@ -64,15 +64,15 @@ export function SlotMiniCard({
   return (
     <motion.div
       whileTap={{ scale: 0.95 }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, zIndex: 30 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      className="flex-shrink-0"
+      className="flex-shrink-0 relative"
     >
       <Card 
         className={`p-3 min-w-[160px] cursor-pointer transition-all duration-200 active:scale-95 select-none border-2 ${
           isSelected 
-            ? 'ring-2 ring-primary border-primary bg-primary/15 shadow-lg' 
-            : 'hover:bg-primary/5 hover:shadow-lg border-border hover:border-primary/60 hover:scale-[1.02]'
+            ? 'ring-2 ring-primary border-primary bg-primary/15 shadow-lg z-30' 
+            : 'hover:bg-primary/5 hover:shadow-2xl border-border hover:border-primary/60 hover:scale-[1.02]'
         }`}
         onClick={handleClick}
         role="button"

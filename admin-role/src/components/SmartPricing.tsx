@@ -352,14 +352,12 @@ export function SmartPricing({ onBack }: SmartPricingProps) {
                         <p className="font-semibold text-gray-900">{service.bookingsToday}</p>
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">Смарт-прайсинг</p>
-                          <Switch
-                            checked={service.isSmartPricingEnabled}
-                            onCheckedChange={() => toggleSmartPricing(service.id)}
-                          />
-                        </div>
+                      <div className="flex flex-col items-center justify-center">
+                        <p className="text-sm text-gray-500 mb-2">Смарт-прайсинг</p>
+                        <Switch
+                          checked={service.isSmartPricingEnabled}
+                          onCheckedChange={() => toggleSmartPricing(service.id)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -402,14 +400,14 @@ export function SmartPricing({ onBack }: SmartPricingProps) {
                     </div>
                     
                     <div className="flex items-center gap-3 ml-4">
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500 mb-1">Активно</p>
+                      <div className="flex flex-col items-center justify-center">
+                        <p className="text-sm text-gray-500 mb-2">Активно</p>
                         <Switch
                           checked={rule.isActive}
                           onCheckedChange={() => toggleRule(rule.id)}
                         />
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="h-10 w-10 p-0">
                         <Settings className="w-4 h-4" />
                       </Button>
                     </div>

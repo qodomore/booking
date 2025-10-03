@@ -11,7 +11,8 @@ import {
   Filter,
   ChevronDown,
   Menu,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 
 // Import UI components
@@ -82,9 +83,9 @@ function MainApp() {
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [activeSettingsPage, setActiveSettingsPage] = useState(null);
   
-  // New screen states
-  const [currentScreen, setCurrentScreen] = useState('main'); // main, onboarding, team, security, wallet, billing
-  const [previousScreen, setPreviousScreen] = useState('main'); // Track where user came from
+  // New screen states with navigation stack
+  const [navigationStack, setNavigationStack] = useState<string[]>(['main']);
+  const currentScreen = navigationStack[navigationStack.length - 1];
 
   // Debug logging
   useEffect(() => {
@@ -94,6 +95,11 @@ function MainApp() {
   useEffect(() => {
     console.log('Active tab changed to:', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    console.log('Navigation stack:', navigationStack);
+    console.log('Current screen:', currentScreen);
+  }, [navigationStack, currentScreen]);
 
   const { hapticFeedback, showAlert, ready } = useTelegram();
 
@@ -130,23 +136,45 @@ function MainApp() {
     setActiveSettingsPage(null);
   };
 
-  // New screen navigation handlers
+  // Get page title based on active tab and settings page
+  const getPageTitle = () => {
+    // If in settings subpage, show that title
+    if (activeSettingsPage === 'ai-center') return 'Интеллектуальный центр';
+    if (activeSettingsPage === 'smart-pricing') return 'Автоценообразование';
+    if (activeSettingsPage === 'analytics') return 'Аналитика и отчёты';
+    if (activeSettingsPage === 'notifications') return 'Уведомления';
+    if (activeSettingsPage === 'client-database') return 'База клиентов';
+    if (activeSettingsPage === 'public-catalog') return 'Публичный каталог';
+    if (activeSettingsPage === 'subscription') return 'Управление подпиской';
+    if (activeSettingsPage === 'theme-settings') return 'Темы и оформление';
+    
+    // Otherwise show tab title
+    if (activeTab === 'calendar') return 'Календарь';
+    if (activeTab === 'resources') return 'Ресурсы';
+    if (activeTab === 'services') return 'Услуги';
+    if (activeTab === 'marketing') return 'Маркетинг';
+    if (activeTab === 'settings') return 'Настройки';
+    
+    return 'Управление бизнесом';
+  };
+
+  // New screen navigation handlers with stack
   const handleNavigateToScreen = (screen: string) => {
     if (hapticFeedback?.light) hapticFeedback.light();
-    setPreviousScreen(currentScreen);
-    setCurrentScreen(screen);
+    setNavigationStack(prev => [...prev, screen]);
   };
 
   const handleBackToMain = () => {
     if (hapticFeedback?.light) hapticFeedback.light();
-    setCurrentScreen('main');
-    setPreviousScreen('main');
+    setNavigationStack(['main']);
   };
 
   const handleBackToPrevious = () => {
     if (hapticFeedback?.light) hapticFeedback.light();
-    setCurrentScreen(previousScreen);
-    setPreviousScreen('main');
+    setNavigationStack(prev => {
+      if (prev.length <= 1) return ['main'];
+      return prev.slice(0, -1);
+    });
   };
 
   // Handle insights navigation
@@ -189,77 +217,74 @@ function MainApp() {
         {/* Conditional Screen Rendering */}
         {currentScreen === 'onboarding-account' && (
           <CreateAccountScreen 
-            onNext={() => setCurrentScreen('onboarding-location')}
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onNext={() => handleNavigateToScreen('onboarding-location')}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'onboarding-location' && (
           <CreateLocationScreen 
-            onNext={() => setCurrentScreen('onboarding-telegram')}
-            onBack={() => setCurrentScreen('onboarding-account')}
+            onNext={() => handleNavigateToScreen('onboarding-telegram')}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'onboarding-telegram' && (
           <ConnectTelegramScreen 
-            onNext={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
-            onBack={() => setCurrentScreen('onboarding-location')}
+            onNext={handleBackToPrevious}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'team' && (
           <TeamDashboardScreen 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'security' && (
           <SecuritySessionsScreen 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'wallet' && (
           <WalletOverviewScreen 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
-            onViewTransactions={() => {
-              setPreviousScreen(currentScreen);
-              setCurrentScreen('billing');
-            }}
+            onBack={handleBackToPrevious}
+            onViewTransactions={() => handleNavigateToScreen('billing')}
             locale="ru"
           />
         )}
         
         {currentScreen === 'billing' && (
           <BillingHistoryScreen 
-            onBack={() => setCurrentScreen('wallet')}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'locale' && (
           <LocaleSettingsScreen 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'schedule' && (
           <ScheduleTimeOffScreen 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onBack={handleBackToPrevious}
             locale="ru"
           />
         )}
         
         {currentScreen === 'demo' && (
           <DemoScreen 
-            onBack={handleBackToMain}
+            onBack={handleBackToPrevious}
             onNavigate={handleNavigateToScreen}
             locale="ru"
           />
@@ -267,7 +292,7 @@ function MainApp() {
         
         {currentScreen === 'booking-confirmation' && (
           <BookingConfirmationDemo 
-            onBack={previousScreen === 'demo' ? handleBackToPrevious : handleBackToMain}
+            onBack={handleBackToPrevious}
           />
         )}
         
@@ -280,13 +305,15 @@ function MainApp() {
           <>
             {/* Header */}
             <TelegramHeader 
-              title="Управление бизнесом"
+              title={getPageTitle()}
+              showBackButton={activeSettingsPage !== null}
+              onBack={activeSettingsPage ? handleBackToSettings : undefined}
               onMenuClick={() => setIsSettingsOpen(true)}
               onNotificationClick={() => {}}
             />
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 pb-20 pt-4">
+            <div className="container mx-auto px-4 pb-20 pt-4 overflow-x-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Tab Navigation - Hidden but required for Tabs to work */}
             <TabsList className="sr-only">
@@ -298,7 +325,7 @@ function MainApp() {
             </TabsList>
 
             {/* Tab Content */}
-            <TabsContent value="calendar" className="space-y-4">
+            <TabsContent value="calendar" className="space-y-4 max-w-full">
               {/* Search and Filters */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
@@ -377,7 +404,7 @@ function MainApp() {
               />
             </TabsContent>
 
-            <TabsContent value="resources">
+            <TabsContent value="resources" className="max-w-full">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">Управление ресурсами</h2>
@@ -400,32 +427,33 @@ function MainApp() {
               </div>
             </TabsContent>
 
-            <TabsContent value="services">
-              <div className="space-y-6">
+            <TabsContent value="services" className="max-w-full">
+              <div className="space-y-6 max-w-full">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">Управление услугами</h2>
                 </div>
 
-                {/* AI инструменты */}
-                <Card className="p-4">
-                  <h3 className="font-medium mb-3">AI инструменты</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-gradient-card text-white">
-                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mb-2">
-                        <BarChart3 className="w-4 h-4" />
+                {/* AI Assistant */}
+                <div className="max-w-full">
+                  <button 
+                    onClick={() => {
+                      if (hapticFeedback?.light) hapticFeedback.light();
+                      handleSettingsNavigation('ai-center');
+                      setActiveTab('settings');
+                    }}
+                    className="w-full p-4 rounded-xl bg-card border-2 border-border text-left transition-all duration-200 hover:border-primary hover:shadow-md hover:-translate-y-0.5 active:scale-95"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-5 h-5 text-primary" />
                       </div>
-                      <div className="text-sm font-medium">Smart Pricing</div>
-                      <div className="text-xs opacity-80">Автоценообразование</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted">
-                      <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-                        <Users className="w-4 h-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground mb-0.5">AI Ассистент</div>
+                        <div className="text-xs text-muted-foreground leading-snug">Помощник записи</div>
                       </div>
-                      <div className="text-sm font-medium">AI Ассистент</div>
-                      <div className="text-xs text-muted-foreground">Помощник записи</div>
                     </div>
-                  </div>
-                </Card>
+                  </button>
+                </div>
 
                 {/* Управление услугами */}
                 <ServiceManagement />
@@ -434,7 +462,7 @@ function MainApp() {
 
 
 
-            <TabsContent value="marketing">
+            <TabsContent value="marketing" className="max-w-full">
               <Marketing 
                 locale="ru"
                 plan="pro" // Change to "free" to test locked features

@@ -229,22 +229,33 @@ export function BrandingCard({
 
   if (isLocked) {
     return (
-      <Card className="p-4 opacity-60 relative">
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
-          <div className="text-center space-y-2">
-            <Lock className="w-6 h-6 mx-auto text-muted-foreground" />
-            <div>
+      <Card className="p-4 opacity-60 relative overflow-hidden min-h-[160px]">
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center p-6 pointer-events-none">
+          <div className="text-center space-y-3 max-w-full w-full pointer-events-auto">
+            <Lock className="w-6 h-6 mx-auto text-muted-foreground flex-shrink-0" />
+            <div className="max-w-full px-2 space-y-1">
               <p className="font-medium text-sm">{t.lockedTitle}</p>
-              <p className="text-xs text-muted-foreground">{t.lockedDescription}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t.lockedDescription}</p>
             </div>
-            <Button size="sm" className="elegant-button">
-              <Crown className="w-3 h-3 mr-1" />
-              {t.upgrade}
-            </Button>
+            <div className="pt-1">
+              <Button 
+                size="sm" 
+                className="elegant-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Upgrade to Pro clicked');
+                  // Handle upgrade action here
+                }}
+              >
+                <Crown className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">{t.upgrade}</span>
+              </Button>
+            </div>
           </div>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[140px]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
               <Palette className="w-4 h-4 text-primary" />

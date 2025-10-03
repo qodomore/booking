@@ -1469,6 +1469,107 @@
     transform: translate(-50%, -100%);
     margin-top: -8px;
   }
+  
+  /* Responsive dialog/sheet styles */
+  @media (max-width: 768px) {
+    /* Full width dialogs on mobile */
+    [data-slot="dialog-content"] {
+      width: calc(100vw - 32px) !important;
+      max-width: calc(100vw - 32px) !important;
+      margin: 0 16px !important;
+    }
+    
+    /* Sheet adjustments for mobile */
+    [data-slot="sheet-content"][data-side="bottom"] {
+      max-height: 90vh !important;
+      border-radius: 24px 24px 0 0 !important;
+    }
+    
+    /* Better touch targets on mobile */
+    button {
+      min-height: 44px !important;
+    }
+    
+    /* Adjust padding for mobile dialogs */
+    [data-slot="dialog-content"] > div {
+      padding: 20px !important;
+    }
+    
+    /* Campaign type buttons on mobile */
+    .campaign-type-button {
+      padding: 16px !important;
+      font-size: 14px !important;
+    }
+  }
+  
+  /* Small mobile devices */
+  @media (max-width: 480px) {
+    [data-slot="dialog-content"] {
+      width: calc(100vw - 24px) !important;
+      max-width: calc(100vw - 24px) !important;
+      margin: 0 12px !important;
+    }
+    
+    /* Smaller font sizes for compact displays */
+    h2 {
+      font-size: 1.5rem !important;
+    }
+    
+    h3 {
+      font-size: 1.25rem !important;
+    }
+    
+    /* Tighter spacing on very small screens */
+    .space-y-3 > * + * {
+      margin-top: 0.5rem !important;
+    }
+  }
+  
+  /* Ensure proper viewport on all devices */
+  @supports (height: 100dvh) {
+    [data-slot="sheet-content"][data-side="bottom"] {
+      max-height: 85dvh !important;
+    }
+  }
+  
+  /* Campaign type button adaptive styles */
+  .campaign-type-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  @media (max-width: 640px) {
+    .campaign-type-btn {
+      padding: 12px !important;
+    }
+    
+    .campaign-type-btn .text-2xl {
+      font-size: 1.5rem !important;
+    }
+    
+    .campaign-type-btn .font-medium {
+      font-size: 14px !important;
+    }
+    
+    .campaign-type-btn .text-sm {
+      font-size: 12px !important;
+      line-height: 1.4 !important;
+    }
+  }
+  
+  /* Prevent layout shift on touch devices */
+  @media (hover: none) {
+    button {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+  }
+  
+  /* Improved spacing for mobile sheets */
+  @media (max-width: 768px) {
+    [data-slot="sheet-content"] .space-y-3 {
+      gap: 12px !important;
+    }
+  }
 }
 
 /**

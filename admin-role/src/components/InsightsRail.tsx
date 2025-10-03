@@ -147,7 +147,7 @@ export function InsightsRail({ locale = 'ru', plan = 'free', theme = 'blue', onN
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-w-full overflow-hidden">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
           <Info className="w-3 h-3 text-primary" />
@@ -158,7 +158,7 @@ export function InsightsRail({ locale = 'ru', plan = 'free', theme = 'blue', onN
         </Badge>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-w-full overflow-hidden">
         <AnimatePresence>
           {visibleInsights.map((insight, index) => (
             <motion.div
@@ -245,11 +245,11 @@ export function InsightsRail({ locale = 'ru', plan = 'free', theme = 'blue', onN
           >
             <Card className="relative overflow-hidden">
               {/* Blur overlay */}
-              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center space-y-3">
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center space-y-3 px-4">
                 <Lock className="w-8 h-8 text-muted-foreground" />
-                <div className="text-center space-y-1">
+                <div className="text-center space-y-1 max-w-full">
                   <h4 className="font-medium text-sm">{t.proFeature}</h4>
-                  <p className="text-xs text-muted-foreground max-w-48">
+                  <p className="text-xs text-muted-foreground px-2">
                     {t.proDescription}
                   </p>
                 </div>

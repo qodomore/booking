@@ -1,25 +1,28 @@
 import React, { useState } from 'react';
-import { Gift, Heart, Users, Mail, MessageSquare, Target, Calendar, TrendingUp, Play, Pause, Settings, ArrowLeft, Eye, Send, Lock, Zap, Info, CheckCircle } from 'lucide-react';
+import { Gift, Heart, Users, Mail, MessageSquare, Target, Calendar, TrendingUp, Play, Pause, Settings, ArrowLeft, Eye, Send, Lock, Zap, Info, CheckCircle, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
+import { SegmentCriteriaBuilder } from './SegmentCriteriaBuilder';
 import { Progress } from './ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { toast } from 'sonner';
 import { AutoPost } from './AutoPost';
+import { useIsMobile } from './ui/use-mobile';
 
 interface Campaign {
   id: string;
   name: string;
-  type: 'birthday' | 'winback' | 'loyalty' | 'referral' | 'seasonal';
+  type: 'birthday' | 'winback' | 'loyalty' | 'referral' | 'seasonal' | 'custom';
   status: 'active' | 'paused' | 'completed';
   targetAudience: string;
   sent: number;
@@ -247,6 +250,7 @@ interface MarketingProps {
 }
 
 export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft = 100 }: MarketingProps) {
+  const isMobile = useIsMobile();
   const [campaignsData, setCampaignsData] = useState<Campaign[]>(campaigns);
   const [birthdayClientsData, setBirthdayClientsData] = useState<BirthdayClient[]>(birthdayClients);
   const [selectedCampaignType, setSelectedCampaignType] = useState('all');
@@ -257,6 +261,31 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
   const [isMessageTemplateOpen, setIsMessageTemplateOpen] = useState(false);
   const [messageTemplate, setMessageTemplate] = useState('');
   const [messageSubject, setMessageSubject] = useState('');
+  const [selectedSegmentInfo, setSelectedSegmentInfo] = useState<AudienceSegment | null>(null);
+  const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+  const [selectedCampaignTypeForCreation, setSelectedCampaignTypeForCreation] = useState<string | null>(null);
+  const [isCampaignSetupOpen, setIsCampaignSetupOpen] = useState(false);
+  
+  // Campaign setup form state
+  const [campaignName, setCampaignName] = useState('');
+  const [campaignDescription, setCampaignDescription] = useState('');
+  const [campaignMessage, setCampaignMessage] = useState('');
+  const [campaignTargetSegments, setCampaignTargetSegments] = useState<string[]>([]);
+  
+  // Custom segment creation state
+  const [isCreateSegmentOpen, setIsCreateSegmentOpen] = useState(false);
+  const [customSegments, setCustomSegments] = useState<AudienceSegment[]>([]);
+  const [newSegmentName, setNewSegmentName] = useState('');
+  const [newSegmentIcon, setNewSegmentIcon] = useState('👥');
+  const [newSegmentDescription, setNewSegmentDescription] = useState('');
+  
+  // Multi-level criteria system
+  const [selectedCriteriaCategories, setSelectedCriteriaCategories] = useState<string[]>([]);
+  const [criteriaValues, setCriteriaValues] = useState<{[key: string]: any}>({});
+  
+  // Campaign settings state
+  const [isCampaignSettingsOpen, setIsCampaignSettingsOpen] = useState(false);
+  const [selectedCampaignForSettings, setSelectedCampaignForSettings] = useState<Campaign | null>(null);
 
   // Text content
   const text = {
@@ -281,7 +310,11 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
       subject: 'Тема сообщения',
       message: 'Текст сообщения',
       placeholders: 'Используйте: {имя}, {услуга}, {скидка}',
-      segmentRule: 'Правило сегмента'
+      segmentRule: 'Правило сегмента',
+      segmentInfo: 'Информация о сегменте',
+      segmentDescription: 'Описание',
+      segmentCriteria: 'Критерии отбора',
+      close: 'Закрыть'
     },
     en: {
       audienceSegments: 'Audience Segments',
@@ -304,7 +337,11 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
       subject: 'Message Subject',
       message: 'Message Text',
       placeholders: 'Use: {name}, {service}, {discount}',
-      segmentRule: 'Segment Rule'
+      segmentRule: 'Segment Rule',
+      segmentInfo: 'Segment Information',
+      segmentDescription: 'Description',
+      segmentCriteria: 'Selection Criteria',
+      close: 'Close'
     }
   };
 
@@ -326,6 +363,7 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
       case 'loyalty': return '⭐';
       case 'referral': return '👥';
       case 'seasonal': return '🎄';
+      case 'custom': return '✨';
       default: return '📧';
     }
   };
@@ -337,6 +375,7 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
       case 'loyalty': return 'Лояльность';
       case 'referral': return 'Реферальная';
       case 'seasonal': return 'Сезонная';
+      case 'custom': return 'Кастомная';
       default: return 'Общая';
     }
   };
@@ -415,6 +454,156 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
     setMessageSubject('');
   };
 
+  const handleCampaignTypeSelect = (type: string) => {
+    setSelectedCampaignTypeForCreation(type);
+    setIsCreateCampaignOpen(false);
+    setIsCampaignSetupOpen(true);
+    
+    // Pre-fill campaign data based on type
+    switch (type) {
+      case 'birthday':
+        setCampaignName(locale === 'ru' ? 'День рождения' : 'Birthday Campaign');
+        setCampaignDescription(locale === 'ru' ? 'Автоматические поздравления с персональными скидками' : 'Automatic greetings with personal discounts');
+        setCampaignMessage(locale === 'ru' ? 'Поздравляем с днём рождения! 🎂\n\nДарим вам скидку 20% на любую услугу в течение недели.' : 'Happy Birthday! 🎂\n\nEnjoy 20% off any service this week.');
+        break;
+      case 'winback':
+        setCampaignName(locale === 'ru' ? 'Возврат клиентов' : 'Winback Campaign');
+        setCampaignDescription(locale === 'ru' ? 'Специальные предложения для неактивных клиентов' : 'Special offers for inactive clients');
+        setCampaignMessage(locale === 'ru' ? 'Мы скучали по вам! 💝\n\nСпециальное предложение - скидка 15% на ваше следующее посещение.' : 'We missed you! 💝\n\nSpecial offer - 15% off your next visit.');
+        break;
+      case 'loyalty':
+        setCampaignName(locale === 'ru' ? 'Программа лояльности' : 'Loyalty Program');
+        setCampaignDescription(locale === 'ru' ? 'Вознаграждения для постоянных клиентов' : 'Rewards for regular clients');
+        setCampaignMessage(locale === 'ru' ? 'Спасибо за вашу лояльность! ⭐\n\nВы наш постоянный клиент - получите бонус 10% на следующее посещение.' : 'Thank you for your loyalty! ⭐\n\nAs a regular client, get 10% bonus on your next visit.');
+        break;
+      case 'referral':
+        setCampaignName(locale === 'ru' ? 'Реферальная программа' : 'Referral Program');
+        setCampaignDescription(locale === 'ru' ? 'Привлечение новых клиентов через рекомендации' : 'Attract new clients through referrals');
+        setCampaignMessage(locale === 'ru' ? 'Приведите друга! 👥\n\nПолучите скидку 20% за каждого приведённого друга.' : 'Bring a friend! 👥\n\nGet 20% off for every friend you refer.');
+        break;
+      case 'seasonal':
+        setCampaignName(locale === 'ru' ? 'Сезонная кампания' : 'Seasonal Campaign');
+        setCampaignDescription(locale === 'ru' ? 'Праздничные и сезонные предложения' : 'Holiday and seasonal offers');
+        setCampaignMessage(locale === 'ru' ? 'Новогодние скидки! 🎄\n\nПраздничное предложение - скидка до 30%.' : 'Holiday Sale! 🎄\n\nSpecial offer - up to 30% off.');
+        break;
+      case 'custom':
+        setCampaignName('');
+        setCampaignDescription('');
+        setCampaignMessage('');
+        break;
+    }
+  };
+
+  const handleCampaignCreate = () => {
+    // Validate form
+    if (!campaignName.trim()) {
+      toast.error(locale === 'ru' ? 'Введите название кампании' : 'Enter campaign name');
+      return;
+    }
+    if (!campaignMessage.trim()) {
+      toast.error(locale === 'ru' ? 'Введите текст сообщения' : 'Enter campaign message');
+      return;
+    }
+
+    // Create campaign (mock implementation)
+    toast.success(locale === 'ru' ? `✅ Кампания "${campaignName}" создана` : `✅ Campaign "${campaignName}" created`);
+    
+    // Reset form
+    setIsCampaignSetupOpen(false);
+    setSelectedCampaignTypeForCreation(null);
+    setCampaignName('');
+    setCampaignDescription('');
+    setCampaignMessage('');
+    setCampaignTargetSegments([]);
+  };
+
+  const handleCampaignSettings = (campaign: Campaign) => {
+    setSelectedCampaignForSettings(campaign);
+    setIsCampaignSettingsOpen(true);
+  };
+
+  const handleSaveCampaignSettings = () => {
+    if (!selectedCampaignForSettings) return;
+    
+    toast.success(locale === 'ru' 
+      ? `✅ Настройки кампании \"${selectedCampaignForSettings.name}\" сохранены` 
+      : `✅ Settings for \"${selectedCampaignForSettings.name}\" saved`
+    );
+    
+    setIsCampaignSettingsOpen(false);
+    setSelectedCampaignForSettings(null);
+  };
+
+  const handleCreateCustomSegment = () => {
+    // Validate form
+    if (!newSegmentName.trim()) {
+      toast.error(locale === 'ru' ? 'Введите название сегмента' : 'Enter segment name');
+      return;
+    }
+
+    // Count selected criteria
+    const selectedCount = Object.values(criteriaValues).filter(v => v).length;
+
+    const newSegment: AudienceSegment = {
+      id: `custom-${Date.now()}`,
+      name: {
+        ru: newSegmentName,
+        en: newSegmentName
+      },
+      description: {
+        ru: newSegmentDescription || 'Кастомный сегмент',
+        en: newSegmentDescription || 'Custom segment'
+      },
+      count: Math.floor(Math.random() * 200) + 50, // Mock count
+      icon: newSegmentIcon,
+      rule: {
+        ru: selectedCount > 0 
+          ? `${selectedCount} ${selectedCount === 1 ? 'критерий' : 'критериев'}` 
+          : 'Без критериев',
+        en: selectedCount > 0 
+          ? `${selectedCount} ${selectedCount === 1 ? 'criterion' : 'criteria'}` 
+          : 'No criteria'
+      }
+    };
+
+    setCustomSegments([...customSegments, newSegment]);
+    toast.success(locale === 'ru' ? `✅ Сегмент "${newSegmentName}" создан` : `✅ Segment "${newSegmentName}" created`);
+    
+    // Reset form
+    setIsCreateSegmentOpen(false);
+    setNewSegmentName('');
+    setNewSegmentIcon('👥');
+    setNewSegmentDescription('');
+    setSelectedCriteriaCategories([]);
+    setCriteriaValues({});
+  };
+
+  const handleAddCriteriaCategory = (categoryId: string) => {
+    if (!selectedCriteriaCategories.includes(categoryId)) {
+      setSelectedCriteriaCategories([...selectedCriteriaCategories, categoryId]);
+    }
+  };
+
+  const handleRemoveCriteriaCategory = (categoryId: string) => {
+    setSelectedCriteriaCategories(selectedCriteriaCategories.filter(id => id !== categoryId));
+    const newCriteriaValues = { ...criteriaValues };
+    Object.keys(newCriteriaValues).forEach(key => {
+      if (key.startsWith(`${categoryId}-`)) {
+        delete newCriteriaValues[key];
+      }
+    });
+    setCriteriaValues(newCriteriaValues);
+  };
+
+  const handleCriteriaValueChange = (key: string, value: string) => {
+    setCriteriaValues({
+      ...criteriaValues,
+      [key]: value
+    });
+  };
+
+  const allSegments = [...audienceSegments, ...customSegments];
+
   const filteredCampaigns = campaignsData.filter(campaign => {
     if (selectedCampaignType === 'all') return true;
     return campaign.type === selectedCampaignType;
@@ -428,27 +617,32 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
+      <div className="flex justify-between items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {onBack && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="p-2"
+              className="p-2 shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
           )}
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Маркетинг и кампании</h2>
-            <p className="text-gray-500 mt-1">Автоматизированные маркетинговые кампании</p>
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">Маркетинг и кампании</h2>
+            <p className="text-gray-500 mt-1 text-sm sm:text-base truncate hidden sm:block">Автоматизиров��нные маркетинговые кампании</p>
           </div>
         </div>
         
-        <Button className="flex items-center gap-2">
-          <Target className="w-4 h-4" />
-          Создать кампанию
+        <Button 
+          className="flex items-center gap-2 whitespace-nowrap"
+          onClick={() => setIsCreateCampaignOpen(true)}
+          size={isMobile ? "sm" : "default"}
+        >
+          <Plus className="w-4 h-4 shrink-0" />
+          <span className="hidden sm:inline">Создать кампанию</span>
+          <span className="sm:hidden">Создать</span>
         </Button>
       </div>
 
@@ -462,38 +656,53 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-muted-foreground">
+                {locale === 'ru' ? 'Выберите сегменты для таргетинга' : 'Select segments for targeting'}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateSegmentOpen(true)}
+                className="h-8"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {locale === 'ru' ? 'Создать' : 'Create'}
+              </Button>
+            </div>
             <div className="space-y-3">
-              {audienceSegments.map(segment => (
-                <div key={segment.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      checked={selectedSegments.includes(segment.id)}
-                      onCheckedChange={() => handleSegmentToggle(segment.id)}
-                    />
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{segment.icon}</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{segment.name[locale]}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {segment.count}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm" 
-                            className="p-1 h-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast.info(segment.rule[locale]);
-                            }}
-                          >
-                            <Info className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{segment.description[locale]}</p>
+              {allSegments.map(segment => (
+                <div key={segment.id} className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <Checkbox
+                    checked={selectedSegments.includes(segment.id)}
+                    onCheckedChange={() => handleSegmentToggle(segment.id)}
+                    className="mt-0.5"
+                  />
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 flex items-center justify-center text-2xl shrink-0">
+                      {segment.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium truncate">{segment.name[locale]}</span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {segment.count}
+                        </Badge>
                       </div>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{segment.description[locale]}</p>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm" 
+                    className="w-8 h-8 p-0 hover:bg-primary/10 rounded-full shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSegmentInfo(segment);
+                    }}
+                  >
+                    <Info className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -546,21 +755,23 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
               <div className="filter blur-sm pointer-events-none">
                 <div className="space-y-3">
                   {audienceSegments.slice(0, 3).map(segment => (
-                    <div key={segment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Checkbox />
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{segment.icon}</span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{segment.name[locale]}</span>
-                              <Badge variant="secondary" className="text-xs">
-                                {segment.count}
-                              </Badge>
-                            </div>
+                    <div key={segment.id} className="flex items-center gap-3 p-4 border rounded-lg">
+                      <Checkbox className="mt-0.5" />
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 flex items-center justify-center text-2xl shrink-0">
+                          {segment.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">{segment.name[locale]}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {segment.count}
+                            </Badge>
                           </div>
+                          <p className="text-sm text-muted-foreground">{segment.description[locale]}</p>
                         </div>
                       </div>
+                      <div className="w-8 h-8"></div>
                     </div>
                   ))}
                 </div>
@@ -658,11 +869,23 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
       </div>
 
       <Tabs defaultValue="campaigns" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="campaigns">Активные кампании</TabsTrigger>
-          <TabsTrigger value="birthday">Дни рождения</TabsTrigger>
-          <TabsTrigger value="winback">Win-back</TabsTrigger>
-          <TabsTrigger value="analytics">Аналитика</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="campaigns" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Кампании</span>
+            <span className="inline sm:hidden">📊</span>
+          </TabsTrigger>
+          <TabsTrigger value="birthday" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Дни рождения</span>
+            <span className="inline sm:hidden">🎂</span>
+          </TabsTrigger>
+          <TabsTrigger value="winback" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Win-back</span>
+            <span className="inline sm:hidden">💝</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Аналитика</span>
+            <span className="inline sm:hidden">📈</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Campaigns Tab */}
@@ -670,16 +893,52 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
           {/* Filter */}
           <div className="flex gap-4">
             <Select value={selectedCampaignType} onValueChange={setSelectedCampaignType}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-[240px]">
                 <SelectValue placeholder="Тип кампании" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Все кампании</SelectItem>
-                <SelectItem value="birthday">Дни рождения</SelectItem>
-                <SelectItem value="winback">Возврат клиентов</SelectItem>
-                <SelectItem value="loyalty">Лояльность</SelectItem>
-                <SelectItem value="referral">Реферальные</SelectItem>
-                <SelectItem value="seasonal">Сезонные</SelectItem>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📊</span>
+                    <span>Все кампании</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="birthday">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎂</span>
+                    <span>Дни рождения</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="winback">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">💝</span>
+                    <span>Возврат клиентов</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="loyalty">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">⭐</span>
+                    <span>Лояльность</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="referral">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">👥</span>
+                    <span>Реферальные</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="seasonal">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎄</span>
+                    <span>Сезонные</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">✨</span>
+                    <span>Свои (кастомные)</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -752,7 +1011,11 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
                           <><Play className="w-4 h-4 mr-1" /> Запуск</>
                         )}
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleCampaignSettings(campaign)}
+                      >
                         <Settings className="w-4 h-4" />
                       </Button>
                     </div>
@@ -1174,6 +1437,1141 @@ export function Marketing({ onBack, locale = 'ru', plan = 'free', sendQuotaLeft 
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Create Campaign Modal - Responsive (Sheet on mobile, Dialog on desktop) */}
+      {isMobile ? (
+        <Sheet open={isCreateCampaignOpen} onOpenChange={setIsCreateCampaignOpen}>
+          <SheetContent side="bottom" className="h-[85vh] sm:h-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Создать новую кампанию' : 'Create New Campaign'}</span>
+              </SheetTitle>
+              <SheetDescription className="break-words">
+                {locale === 'ru' 
+                  ? 'Выберите тип кампании для автоматизации маркетинга' 
+                  : 'Choose campaign type to automate your marketing'}
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="space-y-3 py-6 overflow-y-auto max-h-[calc(85vh-180px)]">
+              {/* Campaign type options */}
+              <button
+                className="w-full p-4 border-2 rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('birthday')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">🎂</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'День рождения' : 'Birthday Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Автоматические поздравления с персональными скидками' 
+                        : 'Automatic greetings with personal discounts'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('winback')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">💝</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Возврат клиентов' : 'Winback Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Специальные предложения для неактивных клиентов' 
+                        : 'Special offers for inactive clients'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('loyalty')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">⭐</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Программа лояльности' : 'Loyalty Program'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Вознаграждения для постоянных клиентов' 
+                        : 'Rewards for regular clients'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('referral')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">👥</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Реферальная программа' : 'Referral Program'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Привлечение новых клиентов через рекомендации' 
+                        : 'Attract new clients through referrals'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('seasonal')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">🎄</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Сезонная кампания' : 'Seasonal Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Праздничные и сезонные предложения' 
+                        : 'Holiday and seasonal offers'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Separator */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    {locale === 'ru' ? 'или' : 'or'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Custom Campaign */}
+              <button
+                className="w-full p-4 border-2 border-dashed rounded-lg active:border-primary transition-colors text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('custom')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">✨</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Кастомная кампания' : 'Custom Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Создайте свою уникальную кампанию с нуля' 
+                        : 'Create your unique campaign from scratch'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isCreateCampaignOpen} onOpenChange={setIsCreateCampaignOpen}>
+          <DialogContent className="max-w-lg sm:max-w-xl overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Создать новую кампанию' : 'Create New Campaign'}</span>
+              </DialogTitle>
+              <DialogDescription className="break-words">
+                {locale === 'ru' 
+                  ? 'Выберите тип кампании для автоматизации маркетинга' 
+                  : 'Choose campaign type to automate your marketing'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3 py-4 overflow-y-auto max-h-[60vh]">
+              {/* Campaign type options */}
+              <button
+                className="w-full p-4 border-2 rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('birthday')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">🎂</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'День рождения' : 'Birthday Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Автоматические поздравления с персональными скидками' 
+                        : 'Automatic greetings with personal discounts'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('winback')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">💝</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Возврат клиентов' : 'Winback Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Специальные предложения для неактивных клиентов' 
+                        : 'Special offers for inactive clients'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('loyalty')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">⭐</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Программа лояльности' : 'Loyalty Program'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Вознаграждения для постоянных клиентов' 
+                        : 'Rewards for regular clients'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('referral')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">👥</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Реферальная программа' : 'Referral Program'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Привлечение новых клиентов через рекомендации' 
+                        : 'Attract new clients through referrals'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                className="w-full p-4 border-2 rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('seasonal')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">🎄</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Сезонная кампания' : 'Seasonal Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Праздничные и сезонные предложения' 
+                        : 'Holiday and seasonal offers'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Separator */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    {locale === 'ru' ? 'или' : 'or'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Custom Campaign */}
+              <button
+                className="w-full p-4 border-2 border-dashed rounded-lg hover:border-primary active:scale-[0.98] transition-all text-left overflow-hidden"
+                onClick={() => handleCampaignTypeSelect('custom')}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">✨</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">
+                      {locale === 'ru' ? 'Кастомная кампания' : 'Custom Campaign'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {locale === 'ru' 
+                        ? 'Создайте свою уникальную кампанию с нуля' 
+                        : 'Create your unique campaign from scratch'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+            
+            <div className="flex gap-2 pt-4 border-t shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateCampaignOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отменить' : 'Cancel'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Segment Info Dialog */}
+      <Dialog open={selectedSegmentInfo !== null} onOpenChange={(open) => !open && setSelectedSegmentInfo(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedSegmentInfo && (
+                <>
+                  <span className="text-2xl">{selectedSegmentInfo.icon}</span>
+                  <span>{selectedSegmentInfo.name[locale]}</span>
+                  <Badge variant="secondary" className="ml-auto">
+                    {selectedSegmentInfo.count}
+                  </Badge>
+                  {selectedSegments.includes(selectedSegmentInfo.id) && (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  )}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {t.segmentInfo}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSegmentInfo && (
+            <div className="space-y-4 py-4">
+              {/* Description */}
+              <div>
+                <h4 className="font-medium mb-2 text-sm text-muted-foreground">{t.segmentDescription}</h4>
+                <p className="text-sm">{selectedSegmentInfo.description[locale]}</p>
+              </div>
+              
+              <Separator />
+              
+              {/* Criteria */}
+              <div>
+                <h4 className="font-medium mb-2 text-sm text-muted-foreground">{t.segmentCriteria}</h4>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm">{selectedSegmentInfo.rule[locale]}</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              {/* Sample clients */}
+              {sampleClients[selectedSegmentInfo.id] && (
+                <div>
+                  <h4 className="font-medium mb-3 text-sm text-muted-foreground">{t.sampleClients}</h4>
+                  <div className="space-y-2">
+                    {sampleClients[selectedSegmentInfo.id].map((client, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="text-xs font-medium text-primary">{client.initials}</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">
+                            {t.lastVisit}: {client.lastVisit}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="flex gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedSegmentInfo(null)}
+              className="flex-1"
+            >
+              {t.close}
+            </Button>
+            {selectedSegmentInfo && (
+              <Button 
+                onClick={() => {
+                  handleSegmentToggle(selectedSegmentInfo.id);
+                  setSelectedSegmentInfo(null);
+                }}
+                className="flex-1 elegant-button"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {selectedSegments.includes(selectedSegmentInfo.id) 
+                  ? (locale === 'ru' ? 'Убрать из кампании' : 'Remove from campaign')
+                  : (locale === 'ru' ? 'Добавить в кампанию' : 'Add to campaign')}
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Campaign Setup Dialog */}
+      {isMobile ? (
+        <Sheet open={isCampaignSetupOpen} onOpenChange={setIsCampaignSetupOpen}>
+          <SheetContent side="bottom" className="h-[90vh]">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Настройка кампании' : 'Campaign Setup'}</span>
+              </SheetTitle>
+              <SheetDescription className="break-words">
+                {selectedCampaignTypeForCreation === 'custom' 
+                  ? (locale === 'ru' ? 'Создайте свою уникальную кампанию' : 'Create your unique campaign')
+                  : (locale === 'ru' ? 'Настройте параметры кампании' : 'Configure campaign parameters')}
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="space-y-4 py-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {/* Campaign Name */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-name">{locale === 'ru' ? 'Название кампании' : 'Campaign Name'}</Label>
+                <Input
+                  id="campaign-name"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Введите название' : 'Enter name'}
+                />
+              </div>
+
+              {/* Campaign Description */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-desc">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                <Textarea
+                  id="campaign-desc"
+                  value={campaignDescription}
+                  onChange={(e) => setCampaignDescription(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Краткое описание кампании' : 'Brief campaign description'}
+                  rows={2}
+                />
+              </div>
+
+              {/* Target Audience */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{locale === 'ru' ? 'Целевая аудитория' : 'Target Audience'}</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCreateSegmentOpen(true)}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {locale === 'ru' ? 'Создать' : 'Create'}
+                  </Button>
+                </div>
+                <div className="p-4 border rounded-lg space-y-2 max-h-60 overflow-y-auto">
+                  {allSegments.map((segment) => (
+                    <div key={segment.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span>{segment.icon}</span>
+                        <span className="text-sm">{segment.name[locale]}</span>
+                      </div>
+                      <Checkbox
+                        checked={campaignTargetSegments.includes(segment.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setCampaignTargetSegments([...campaignTargetSegments, segment.id]);
+                          } else {
+                            setCampaignTargetSegments(campaignTargetSegments.filter(id => id !== segment.id));
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Campaign Message */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-message">{locale === 'ru' ? 'Текст сообщения' : 'Message Text'}</Label>
+                <Textarea
+                  id="campaign-message"
+                  value={campaignMessage}
+                  onChange={(e) => setCampaignMessage(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Введите текст сообщения для клиентов' : 'Enter message text for clients'}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'ru' ? `Символов: ${campaignMessage.length}` : `Characters: ${campaignMessage.length}`}
+                </p>
+              </div>
+
+              {/* Schedule (placeholder) */}
+              <div className="space-y-2">
+                <Label>{locale === 'ru' ? 'Расписание отправки' : 'Send Schedule'}</Label>
+                <Select defaultValue="immediate">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">{locale === 'ru' ? 'Отправить сейчас' : 'Send now'}</SelectItem>
+                    <SelectItem value="scheduled">{locale === 'ru' ? 'Запланировать' : 'Schedule'}</SelectItem>
+                    <SelectItem value="automated">{locale === 'ru' ? 'Автоматически' : 'Automated'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCampaignSetupOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отменить' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleCampaignCreate}
+                className="flex-1 elegant-button"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {locale === 'ru' ? 'Создать кампанию' : 'Create Campaign'}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isCampaignSetupOpen} onOpenChange={setIsCampaignSetupOpen}>
+          <DialogContent className="max-w-2xl overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Настройка кампании' : 'Campaign Setup'}</span>
+              </DialogTitle>
+              <DialogDescription className="break-words">
+                {selectedCampaignTypeForCreation === 'custom' 
+                  ? (locale === 'ru' ? 'Создайте свою уникальную кампанию' : 'Create your unique campaign')
+                  : (locale === 'ru' ? 'Настройте параметры кампании' : 'Configure campaign parameters')}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4 overflow-y-auto max-h-[60vh]">
+              {/* Campaign Name */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-name-desktop">{locale === 'ru' ? 'Название кампании' : 'Campaign Name'}</Label>
+                <Input
+                  id="campaign-name-desktop"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Введите название' : 'Enter name'}
+                />
+              </div>
+
+              {/* Campaign Description */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-desc-desktop">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                <Textarea
+                  id="campaign-desc-desktop"
+                  value={campaignDescription}
+                  onChange={(e) => setCampaignDescription(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Краткое описание кампании' : 'Brief campaign description'}
+                  rows={2}
+                />
+              </div>
+
+              {/* Target Audience */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{locale === 'ru' ? 'Целевая аудитория' : 'Target Audience'}</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCreateSegmentOpen(true)}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {locale === 'ru' ? 'Создать сегмент' : 'Create segment'}
+                  </Button>
+                </div>
+                <div className="p-4 border rounded-lg space-y-2 max-h-48 overflow-y-auto">
+                  {allSegments.map((segment) => (
+                    <div key={segment.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span>{segment.icon}</span>
+                        <span className="text-sm">{segment.name[locale]}</span>
+                        <Badge variant="secondary" className="ml-2">{segment.count}</Badge>
+                      </div>
+                      <Checkbox
+                        checked={campaignTargetSegments.includes(segment.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setCampaignTargetSegments([...campaignTargetSegments, segment.id]);
+                          } else {
+                            setCampaignTargetSegments(campaignTargetSegments.filter(id => id !== segment.id));
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Campaign Message */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-message-desktop">{locale === 'ru' ? 'Текст сообщения' : 'Message Text'}</Label>
+                <Textarea
+                  id="campaign-message-desktop"
+                  value={campaignMessage}
+                  onChange={(e) => setCampaignMessage(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Введите текст сообщения для клиентов' : 'Enter message text for clients'}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {locale === 'ru' ? `Символов: ${campaignMessage.length}` : `Characters: ${campaignMessage.length}`}
+                </p>
+              </div>
+
+              {/* Schedule */}
+              <div className="space-y-2">
+                <Label>{locale === 'ru' ? 'Расписание отправки' : 'Send Schedule'}</Label>
+                <Select defaultValue="immediate">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">{locale === 'ru' ? 'Отправить сейчас' : 'Send now'}</SelectItem>
+                    <SelectItem value="scheduled">{locale === 'ru' ? 'Запланировать' : 'Schedule'}</SelectItem>
+                    <SelectItem value="automated">{locale === 'ru' ? 'Автоматически' : 'Automated'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCampaignSetupOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отменить' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleCampaignCreate}
+                className="flex-1 elegant-button"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {locale === 'ru' ? 'Создать кампанию' : 'Create Campaign'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Create Custom Segment Dialog */}
+      {isMobile ? (
+        <Sheet open={isCreateSegmentOpen} onOpenChange={setIsCreateSegmentOpen}>
+          <SheetContent side="bottom" className="h-[90vh]">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Создать сегмент' : 'Create Segment'}</span>
+              </SheetTitle>
+              <SheetDescription className="break-words">
+                {locale === 'ru' 
+                  ? 'Настройте критерии для своего сегмента аудитории' 
+                  : 'Configure criteria for your audience segment'}
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="space-y-4 py-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {/* Segment Icon */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-icon-mobile">{locale === 'ru' ? 'Иконка' : 'Icon'}</Label>
+                <Select value={newSegmentIcon} onValueChange={setNewSegmentIcon}>
+                  <SelectTrigger id="segment-icon-mobile">
+                    <SelectValue>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{newSegmentIcon}</span>
+                        <span className="text-sm">
+                          {newSegmentIcon === '👥' && (locale === 'ru' ? 'Группа' : 'Group')}
+                          {newSegmentIcon === '⭐' && (locale === 'ru' ? 'Звезда' : 'Star')}
+                          {newSegmentIcon === '💎' && (locale === 'ru' ? 'Бриллиант' : 'Diamond')}
+                          {newSegmentIcon === '🎯' && (locale === 'ru' ? 'Цель' : 'Target')}
+                          {newSegmentIcon === '🔥' && (locale === 'ru' ? 'Огонь' : 'Fire')}
+                          {newSegmentIcon === '💰' && (locale === 'ru' ? 'Деньги' : 'Money')}
+                          {newSegmentIcon === '🎉' && (locale === 'ru' ? 'Праздник' : 'Party')}
+                          {newSegmentIcon === '👑' && (locale === 'ru' ? 'Корона' : 'Crown')}
+                        </span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="👥">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">👥</span>
+                        <span>{locale === 'ru' ? 'Группа' : 'Group'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="⭐">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">⭐</span>
+                        <span>{locale === 'ru' ? 'Звезда' : 'Star'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="💎">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">💎</span>
+                        <span>{locale === 'ru' ? 'Бриллиант' : 'Diamond'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🎯">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🎯</span>
+                        <span>{locale === 'ru' ? 'Цель' : 'Target'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🔥">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🔥</span>
+                        <span>{locale === 'ru' ? 'Огонь' : 'Fire'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="💰">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">💰</span>
+                        <span>{locale === 'ru' ? 'Деньги' : 'Money'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🎉">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🎉</span>
+                        <span>{locale === 'ru' ? 'Праздник' : 'Party'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="👑">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">👑</span>
+                        <span>{locale === 'ru' ? 'Корона' : 'Crown'}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Segment Name */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-name">{locale === 'ru' ? 'Название сегмента' : 'Segment Name'}</Label>
+                <Input
+                  id="segment-name"
+                  value={newSegmentName}
+                  onChange={(e) => setNewSegmentName(e.target.value)}
+                  placeholder={locale === 'ru' ? 'VIP клиенты' : 'VIP clients'}
+                />
+              </div>
+
+              {/* Segment Description */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-desc">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                <Textarea
+                  id="segment-desc"
+                  value={newSegmentDescription}
+                  onChange={(e) => setNewSegmentDescription(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Краткое описание сегмента' : 'Brief segment description'}
+                  rows={2}
+                />
+              </div>
+
+              {/* Criteria - New Component */}
+              <SegmentCriteriaBuilder
+                locale={locale}
+                selectedCategories={selectedCriteriaCategories}
+                criteriaValues={criteriaValues}
+                onAddCategory={handleAddCriteriaCategory}
+                onRemoveCategory={handleRemoveCriteriaCategory}
+                onCriteriaValueChange={handleCriteriaValueChange}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateSegmentOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отменить' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleCreateCustomSegment}
+                className="flex-1 elegant-button"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {locale === 'ru' ? 'Создать сегмент' : 'Create Segment'}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isCreateSegmentOpen} onOpenChange={setIsCreateSegmentOpen}>
+          <DialogContent className="max-w-2xl overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 shrink-0" />
+                <span className="truncate">{locale === 'ru' ? 'Создать сегмент' : 'Create Segment'}</span>
+              </DialogTitle>
+              <DialogDescription className="break-words">
+                {locale === 'ru' 
+                  ? 'Настройте критерии для своего сегмента аудитории' 
+                  : 'Configure criteria for your audience segment'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4 overflow-y-auto max-h-[60vh]">
+              {/* Segment Icon */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-icon-desktop">{locale === 'ru' ? 'Иконка' : 'Icon'}</Label>
+                <Select value={newSegmentIcon} onValueChange={setNewSegmentIcon}>
+                  <SelectTrigger id="segment-icon-desktop">
+                    <SelectValue>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{newSegmentIcon}</span>
+                        <span className="text-sm">
+                          {newSegmentIcon === '👥' && (locale === 'ru' ? 'Группа' : 'Group')}
+                          {newSegmentIcon === '⭐' && (locale === 'ru' ? 'Звезда' : 'Star')}
+                          {newSegmentIcon === '💎' && (locale === 'ru' ? 'Бриллиант' : 'Diamond')}
+                          {newSegmentIcon === '🎯' && (locale === 'ru' ? 'Цель' : 'Target')}
+                          {newSegmentIcon === '🔥' && (locale === 'ru' ? 'Огонь' : 'Fire')}
+                          {newSegmentIcon === '💰' && (locale === 'ru' ? 'Деньги' : 'Money')}
+                          {newSegmentIcon === '🎉' && (locale === 'ru' ? 'Праздник' : 'Party')}
+                          {newSegmentIcon === '👑' && (locale === 'ru' ? 'Корона' : 'Crown')}
+                        </span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="👥">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">👥</span>
+                        <span>{locale === 'ru' ? 'Группа' : 'Group'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="⭐">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">⭐</span>
+                        <span>{locale === 'ru' ? 'Звезда' : 'Star'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="💎">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">💎</span>
+                        <span>{locale === 'ru' ? 'Бриллиант' : 'Diamond'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🎯">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🎯</span>
+                        <span>{locale === 'ru' ? 'Цель' : 'Target'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🔥">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🔥</span>
+                        <span>{locale === 'ru' ? 'Огонь' : 'Fire'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="💰">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">💰</span>
+                        <span>{locale === 'ru' ? 'Деньги' : 'Money'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="🎉">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🎉</span>
+                        <span>{locale === 'ru' ? 'Праздник' : 'Party'}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="👑">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">👑</span>
+                        <span>{locale === 'ru' ? 'Корона' : 'Crown'}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Segment Name */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-name-desktop">{locale === 'ru' ? 'Название сегмента' : 'Segment Name'}</Label>
+                <Input
+                  id="segment-name-desktop"
+                  value={newSegmentName}
+                  onChange={(e) => setNewSegmentName(e.target.value)}
+                  placeholder={locale === 'ru' ? 'VIP клиенты' : 'VIP clients'}
+                />
+              </div>
+
+              {/* Segment Description */}
+              <div className="space-y-2">
+                <Label htmlFor="segment-desc-desktop">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                <Textarea
+                  id="segment-desc-desktop"
+                  value={newSegmentDescription}
+                  onChange={(e) => setNewSegmentDescription(e.target.value)}
+                  placeholder={locale === 'ru' ? 'Краткое описание сегмента' : 'Brief segment description'}
+                  rows={2}
+                />
+              </div>
+
+              {/* Criteria - New Component */}
+              <SegmentCriteriaBuilder
+                locale={locale}
+                selectedCategories={selectedCriteriaCategories}
+                criteriaValues={criteriaValues}
+                onAddCategory={handleAddCriteriaCategory}
+                onRemoveCategory={handleRemoveCriteriaCategory}
+                onCriteriaValueChange={handleCriteriaValueChange}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4 border-t shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateSegmentOpen(false)}
+                className="flex-1"
+              >
+                {locale === 'ru' ? 'Отменить' : 'Cancel'}
+              </Button>
+              <Button 
+                onClick={handleCreateCustomSegment}
+                className="flex-1 elegant-button"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {locale === 'ru' ? 'Создать сегмент' : 'Create Segment'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Campaign Settings Dialog */}
+      {selectedCampaignForSettings && (
+        isMobile ? (
+          <Sheet open={isCampaignSettingsOpen} onOpenChange={setIsCampaignSettingsOpen}>
+            <SheetContent side="bottom" className="h-[85vh]">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 shrink-0" />
+                  <span className="truncate">{locale === 'ru' ? 'Настройки кампании' : 'Campaign Settings'}</span>
+                </SheetTitle>
+                <SheetDescription className="break-words">
+                  {selectedCampaignForSettings.name}
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="space-y-4 py-6 overflow-y-auto max-h-[calc(85vh-180px)]">
+                {/* Campaign Status */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Статус' : 'Status'}</Label>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span>{locale === 'ru' ? 'Кампания активна' : 'Campaign active'}</span>
+                    <Switch 
+                      checked={selectedCampaignForSettings.status === 'active'}
+                      onCheckedChange={() => toggleCampaignStatus(selectedCampaignForSettings.id)}
+                    />
+                  </div>
+                </div>
+
+                {/* Campaign Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-name">{locale === 'ru' ? 'Название' : 'Name'}</Label>
+                  <Input
+                    id="settings-name"
+                    value={selectedCampaignForSettings.name}
+                    readOnly
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-desc">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                  <Textarea
+                    id="settings-desc"
+                    value={selectedCampaignForSettings.description}
+                    rows={2}
+                    readOnly
+                  />
+                </div>
+
+                {/* Trigger */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Триггер' : 'Trigger'}</Label>
+                  <div className="p-3 border rounded-lg bg-muted">
+                    <p className="text-sm">{selectedCampaignForSettings.trigger}</p>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Статистика' : 'Statistics'}</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Отправлено' : 'Sent'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.sent}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Открыто' : 'Opened'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.opened}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Конверсии' : 'Converted'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.converted}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Доход' : 'Revenue'}</p>
+                      <p className="text-lg font-semibold">{(selectedCampaignForSettings.revenue / 1000).toFixed(0)}k ₽</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t shrink-0">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCampaignSettingsOpen(false)}
+                  className="flex-1"
+                >
+                  {locale === 'ru' ? 'Закрыть' : 'Close'}
+                </Button>
+                <Button 
+                  onClick={handleSaveCampaignSettings}
+                  className="flex-1 elegant-button"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {locale === 'ru' ? 'Сохранить' : 'Save'}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Dialog open={isCampaignSettingsOpen} onOpenChange={setIsCampaignSettingsOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 shrink-0" />
+                  <span className="truncate">{locale === 'ru' ? 'Настройки кампании' : 'Campaign Settings'}</span>
+                </DialogTitle>
+                <DialogDescription className="break-words">
+                  {selectedCampaignForSettings.name}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                {/* Campaign Status */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Статус' : 'Status'}</Label>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span>{locale === 'ru' ? 'Кампания активна' : 'Campaign active'}</span>
+                    <Switch 
+                      checked={selectedCampaignForSettings.status === 'active'}
+                      onCheckedChange={() => toggleCampaignStatus(selectedCampaignForSettings.id)}
+                    />
+                  </div>
+                </div>
+
+                {/* Campaign Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-name-desktop">{locale === 'ru' ? 'Название' : 'Name'}</Label>
+                  <Input
+                    id="settings-name-desktop"
+                    value={selectedCampaignForSettings.name}
+                    readOnly
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-desc-desktop">{locale === 'ru' ? 'Описание' : 'Description'}</Label>
+                  <Textarea
+                    id="settings-desc-desktop"
+                    value={selectedCampaignForSettings.description}
+                    rows={2}
+                    readOnly
+                  />
+                </div>
+
+                {/* Trigger */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Триггер' : 'Trigger'}</Label>
+                  <div className="p-3 border rounded-lg bg-muted">
+                    <p className="text-sm">{selectedCampaignForSettings.trigger}</p>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="space-y-2">
+                  <Label>{locale === 'ru' ? 'Статистика' : 'Statistics'}</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Отправлено' : 'Sent'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.sent}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Открыто' : 'Opened'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.opened}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Конверсии' : 'Converted'}</p>
+                      <p className="text-lg font-semibold">{selectedCampaignForSettings.converted}</p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{locale === 'ru' ? 'Доход' : 'Revenue'}</p>
+                      <p className="text-lg font-semibold">{(selectedCampaignForSettings.revenue / 1000).toFixed(0)}k ₽</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCampaignSettingsOpen(false)}
+                  className="flex-1"
+                >
+                  {locale === 'ru' ? 'Закрыть' : 'Close'}
+                </Button>
+                <Button 
+                  onClick={handleSaveCampaignSettings}
+                  className="flex-1 elegant-button"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {locale === 'ru' ? 'Сохранить' : 'Save'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      )}
     </div>
   );
 }
