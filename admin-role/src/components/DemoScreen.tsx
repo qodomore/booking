@@ -11,7 +11,9 @@ import {
   Settings,
   PlayCircle,
   Sparkles,
-  Star
+  Star,
+  Building2,
+  UserCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -111,6 +113,30 @@ const demoScreens = [
     icon: <Calendar className="w-5 h-5" />,
     color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
     category: 'Расписание'
+  },
+  {
+    id: 'organization',
+    title: 'Экран организации (клиентский)',
+    description: 'Карусель медиа, описание, адрес, контакты, часы работы, услуги',
+    icon: <Building2 className="w-5 h-5" />,
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+    category: 'Клиентские'
+  },
+  {
+    id: 'master',
+    title: 'Экран мастера (клиентский)',
+    description: 'Профиль мастера, специализации, услуги, ближайшие окна',
+    icon: <UserCircle className="w-5 h-5" />,
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+    category: 'Клиентские'
+  },
+  {
+    id: 'client-experience',
+    title: 'Клиентский опыт (полная демо)',
+    description: 'Каталог с навигацией к экранам организации и мастера',
+    icon: <Star className="w-5 h-5" />,
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+    category: 'Клиентские'
   }
 ];
 
@@ -121,7 +147,9 @@ const texts = {
     launch: 'Запустить',
     back: 'Назад',
     allScreens: 'Все экраны',
-    description: 'Выберите экран для демонстрации функциональности'
+    description: 'Выберите экран для демонстрации функциональности',
+    newFeature: 'Новое',
+    clientScreensHint: '💡 Клиентские экраны с полной навигацией между каталогом, организацией и мастером'
   },
   en: {
     title: 'Demo Screens',
@@ -129,7 +157,9 @@ const texts = {
     launch: 'Launch',
     back: 'Back',
     allScreens: 'All Screens',
-    description: 'Select a screen to demonstrate functionality'
+    description: 'Select a screen to demonstrate functionality',
+    newFeature: 'New',
+    clientScreensHint: '💡 Client screens with full navigation between catalog, organization and master'
   }
 };
 

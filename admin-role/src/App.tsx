@@ -63,6 +63,9 @@ import { ScheduleTimeOffScreen } from './components/ScheduleTimeOffScreen';
 import { DemoScreen } from './components/DemoScreen';
 import { BookingConfirmationDemo } from './components/BookingConfirmationDemo';
 import { UpsellHintTest } from './components/UpsellHintTest';
+import { OrganizationScreen } from './components/OrganizationScreen';
+import { MasterScreen } from './components/MasterScreen';
+import { ClientExperienceDemo } from './components/ClientExperienceDemo';
 
 // Import contexts
 import { BusinessProvider } from './contexts/BusinessContext';
@@ -298,6 +301,38 @@ function MainApp() {
         
         {currentScreen === 'upsell-hint-test' && (
           <UpsellHintTest />
+        )}
+        
+        {currentScreen === 'organization' && (
+          <OrganizationScreen 
+            isEnabled={true}
+            onBack={handleBackToPrevious}
+            onServiceSelect={(serviceId) => {
+              console.log('Service selected:', serviceId);
+              // Navigate to booking flow if needed
+            }}
+          />
+        )}
+        
+        {currentScreen === 'master' && (
+          <MasterScreen 
+            isEnabled={true}
+            onBack={handleBackToPrevious}
+            onServiceSelect={(serviceId) => {
+              console.log('Service selected:', serviceId);
+              // Navigate to booking flow if needed
+            }}
+            onBooking={(masterId, slotId) => {
+              console.log('Booking:', masterId, slotId);
+              // Navigate to booking confirmation if needed
+            }}
+          />
+        )}
+        
+        {currentScreen === 'client-experience' && (
+          <ClientExperienceDemo 
+            onBack={handleBackToPrevious}
+          />
         )}
 
         {/* Main App Content */}
@@ -646,6 +681,27 @@ function MainApp() {
                       <div className="text-left flex-1">
                         <p className="font-medium">База клиентов</p>
                         <p className="text-xs text-muted-foreground">История и аналитика</p>
+                      </div>
+                    </div>
+                  </Button>
+                </div>
+
+                {/* Демо и тестирование */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Демо и тестирование</h3>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-auto p-4"
+                    onClick={() => handleNavigateToScreen('demo')}
+                  >
+                    <div className="flex items-center gap-4 w-full">
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="font-medium">Демо экраны</p>
+                        <p className="text-xs text-muted-foreground">Все новые экраны и функции</p>
                       </div>
                     </div>
                   </Button>
