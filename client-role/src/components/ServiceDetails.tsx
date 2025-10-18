@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ArrowLeft, Star, MapPin, Clock, Banknote, Info } from 'lucide-react';
 import { AppContext, Service } from '../App';
 import { Button } from './ui/button';
@@ -6,6 +6,8 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { SafeArea, SafeAreaSection } from './SafeArea';
 import { BottomActionBar } from './BottomActionBar';
+import { MediaThumb } from './MediaThumb';
+import { MediaLightbox } from './MediaLightbox';
 
 interface ServiceDetailsProps {
   service: Service;
@@ -16,6 +18,21 @@ export function ServiceDetails({ service }: ServiceDetailsProps) {
   if (!context) return null;
 
   const { language, setCurrentScreen } = context;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Mock media gallery - in production, this would come from service.media
+  const mockMedia = [
+    'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=400&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=400&h=400&fit=crop',
+  ];
+
+  const handleThumbnailClick = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   const texts = {
     ru: {
@@ -83,6 +100,30 @@ export function ServiceDetails({ service }: ServiceDetailsProps) {
         {/* Service Card */}
         <Card className="w-full bg-card/80 backdrop-blur-sm border-0 overflow-hidden">
           <div className="p-6">
+            {/* Media Gallery */}
+            {mockMedia.length > 0 && (
+              <div className="mb-6 -mx-6 px-6">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                  {mockMedia.map((media, index) => (
+                    <MediaThumb
+                      key={index}
+                      src={media}
+                      alt={`${service.name} - Photo ${index + 1}`}
+                      onClick={() => handleThumbnailClick(index)}
+                    />
+                  ))}
+                  {/* Show placeholders if less than 6 items */}
+                  {Array.from({ length: Math.max(0, 6 - mockMedia.length) }).map((_, index) => (
+                    <MediaThumb
+                      key={`placeholder-${index}`}
+                      alt="No image"
+                      isPlaceholder
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start justify-between mb-4 gap-4">
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-medium mb-2">{service.name}</h2>
@@ -219,6 +260,16 @@ export function ServiceDetails({ service }: ServiceDetailsProps) {
         onContinue={handleSelectTime}
         continueText={t.selectTime}
       />
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <MediaLightbox
+          images={mockMedia}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+          alt={service.name}
+        />
+      )}
     </>
   );
 }

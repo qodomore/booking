@@ -48,6 +48,7 @@ export interface Business {
     [key: string]: { open: string; close: string; closed?: boolean };
   };
   image?: string;
+  heroImages?: string[]; // Hero carousel images
   rating?: number;
   reviewCount?: number;
   categories: string[];
@@ -59,6 +60,8 @@ export interface Resource {
   type: 'person' | 'room' | 'equipment';
   description?: string;
   image?: string;
+  avatar?: string;
+  skillBadge?: string;
   businessId: string;
 }
 
@@ -72,6 +75,7 @@ export interface Service {
   provider: string;
   location?: string;
   image?: string;
+  media?: string[]; // Media gallery images
   rating?: number;
   businessId?: string;
   resourceIds?: string[];
@@ -83,7 +87,7 @@ export interface Booking {
   date: string;
   time: string;
   endTime: string;
-  status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'pending' | 'completed' | 'cancelled' | 'no-show';
   price: number;
 }
 
@@ -100,6 +104,8 @@ export interface AppContextType {
   setSelectedDate: (date: string | null) => void;
   selectedTime: string | null;
   setSelectedTime: (time: string | null) => void;
+  selectedMaster: Resource | null;
+  setSelectedMaster: (master: Resource | null) => void;
   currentBooking: Booking | null;
   setCurrentBooking: (booking: Booking | null) => void;
   bookings: Booking[];
@@ -215,10 +221,65 @@ const mockResources: Resource[] = [
     name: 'Анна Петрова',
     type: 'person',
     description: 'Мастер маникюра с опытом 5 лет',
+    skillBadge: 'Топ мастер',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
     businessId: 'business-1'
   },
   {
     id: 'resource-2',
+    name: 'Мария Иванова',
+    type: 'person',
+    description: 'Специалист по маникюру',
+    skillBadge: 'Мастер',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-3',
+    name: 'Елена Смирнова',
+    type: 'person',
+    description: 'Мастер маникюра',
+    skillBadge: 'Новичок',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-5',
+    name: 'Ольга Волкова',
+    type: 'person',
+    description: 'Специалист по маникюру и педикюру',
+    skillBadge: 'Топ мастер',
+    avatar: 'https://images.unsplash.com/photo-1581065178047-8ee15951ede6?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-6',
+    name: 'Дарья Козлова',
+    type: 'person',
+    description: 'Мастер ногтевого сервиса',
+    skillBadge: 'Специалист',
+    avatar: 'https://images.unsplash.com/photo-1655249481446-25d575f1c054?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-7',
+    name: 'Татьяна Новикова',
+    type: 'person',
+    description: 'Мастер маникюра и дизайна',
+    skillBadge: 'Мастер',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-8',
+    name: 'Виктория Соколова',
+    type: 'person',
+    description: 'Nail-стилист',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop',
+    businessId: 'business-1'
+  },
+  {
+    id: 'resource-4',
     name: 'Кабинет №1',
     type: 'room',
     description: 'Просторный кабинет для маникюра',
@@ -238,7 +299,7 @@ const mockServices: Service[] = [
     location: 'ул. Тверская, 15',
     rating: 4.8,
     businessId: 'business-1',
-    resourceIds: ['resource-1', 'resource-2']
+    resourceIds: ['resource-1', 'resource-2', 'resource-3', 'resource-5', 'resource-6', 'resource-7', 'resource-8']
   },
   {
     id: '2',
@@ -271,10 +332,11 @@ export default function App() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedMaster, setSelectedMaster] = useState<Resource | null>(null);
   const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
-  const [businessResources, setBusinessResources] = useState<Resource[]>([]);
+  const [businessResources, setBusinessResources] = useState<Resource[]>(mockResources);
   const [businessServices, setBusinessServices] = useState<Service[]>([]);
   const [notifications, setNotifications] = useState({
     marketing: false,
@@ -316,6 +378,8 @@ export default function App() {
     setSelectedDate,
     selectedTime,
     setSelectedTime,
+    selectedMaster,
+    setSelectedMaster,
     currentBooking,
     setCurrentBooking,
     bookings,

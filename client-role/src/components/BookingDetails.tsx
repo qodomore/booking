@@ -3,7 +3,8 @@ import { ArrowLeft, Calendar, MapPin, Clock, QrCode, Edit, X } from 'lucide-reac
 import { AppContext, Booking } from '../App';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Badge } from './ui/badge';
+import { StatusChip, BookingStatus } from './StatusChip';
+import { BookingActionsMenu } from './BookingActionsMenu';
 
 interface BookingDetailsProps {
   booking: Booking;
@@ -123,6 +124,12 @@ export function BookingDetails({ booking }: BookingDetailsProps) {
             <h1 className="font-medium">{t.bookingDetails}</h1>
             <p className="text-sm text-muted-foreground">{t.myBookings}</p>
           </div>
+          <BookingActionsMenu
+            bookingId={booking.id}
+            status={booking.status as BookingStatus}
+            language={language}
+            onAction={() => {}}
+          />
         </div>
       </div>
 
@@ -133,9 +140,7 @@ export function BookingDetails({ booking }: BookingDetailsProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">{t.status}</p>
-              <Badge className={`${getStatusColor(booking.status)} border-0`}>
-                {getStatusText(booking.status)}
-              </Badge>
+              <StatusChip status={booking.status as BookingStatus} language={language} />
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{t.bookingCode}</p>

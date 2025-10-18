@@ -14,7 +14,8 @@ export function BookingSuccess() {
     currentBooking,
     selectedService,
     selectedDate,
-    selectedTime
+    selectedTime,
+    selectedMaster
   } = context;
 
   const [showConfetti, setShowConfetti] = useState(true);
@@ -135,6 +136,27 @@ export function BookingSuccess() {
                 <p className="font-medium">{selectedService.name}</p>
                 <p className="text-sm text-muted-foreground">{selectedService.provider}</p>
               </div>
+              
+              {selectedMaster && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{language === 'ru' ? 'Мастер' : 'Master'}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                      {selectedMaster.avatar ? (
+                        <img src={selectedMaster.avatar} alt={selectedMaster.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs">{selectedMaster.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{selectedMaster.name}</p>
+                      {selectedMaster.skillBadge && (
+                        <p className="text-xs text-muted-foreground">{selectedMaster.skillBadge}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{t.datetime}</p>

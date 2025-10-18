@@ -1,17 +1,26 @@
 import React, { useContext, useState } from 'react';
 import { Calendar, Clock, MapPin, Eye, RotateCcw, Settings } from 'lucide-react';
-import { AppContext } from '../App';
+import { AppContext, Booking } from '../App';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { BookingActionsMenu } from './BookingActionsMenu';
+import { StatusChip, BookingStatus } from './StatusChip';
+import { CancelBookingDialog } from './CancelBookingDialog';
+import { RescheduleSheet } from './RescheduleSheet';
+import { toast } from 'sonner@2.0.3';
 
 export function MyBookings() {
   const context = useContext(AppContext);
   if (!context) return null;
 
-  const { language, bookings, setCurrentScreen, setCurrentBooking, theme, setTheme } = context;
+  const { language, bookings, setCurrentScreen, setCurrentBooking, setBookings, setSelectedService, setSelectedDate, setSelectedTime } = context;
   const [activeTab, setActiveTab] = useState('upcoming');
+  
+  // Dialog and sheet states
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [rescheduleSheetOpen, setRescheduleSheetOpen] = useState(false);
+  const [selectedBookingForAction, setSelectedBookingForAction] = useState<any>(null);
 
   const texts = {
     ru: {
@@ -24,11 +33,13 @@ export function MyBookings() {
       findService: 'Найти услугу',
       details: 'Детали',
       repeat: 'Повторить',
-      confirmed: 'Подтверждена',
-      pending: 'Ожидание',
-      completed: 'Завершена',
-      cancelled: 'Отменена',
-      settings: 'Настройки'
+      settings: 'Настройки',
+      // Toast messages
+      bookingConfirmed: 'Запись подтверждена',
+      bookingRescheduled: 'Запись перенесена',
+      bookingCancelled: 'Запись отменена',
+      bookingMarkedNoShow: 'Отмечено: клиент не пришёл',
+      bookingCompleted: 'Запись отмечена как завершённая',
     },
     en: {
       myBookings: 'My Bookings',
@@ -40,11 +51,13 @@ export function MyBookings() {
       findService: 'Find Service',
       details: 'Details',
       repeat: 'Repeat',
-      confirmed: 'Confirmed',
-      pending: 'Pending',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-      settings: 'Settings'
+      settings: 'Settings',
+      // Toast messages
+      bookingConfirmed: 'Booking confirmed',
+      bookingRescheduled: 'Booking rescheduled',
+      bookingCancelled: 'Booking cancelled',
+      bookingMarkedNoShow: 'Marked as no-show',
+      bookingCompleted: 'Booking marked as completed',
     }
   };
 
@@ -68,7 +81,7 @@ export function MyBookings() {
       date: new Date(Date.now() + 86400000).toLocaleDateString('ru-RU'),
       time: '14:00',
       endTime: '15:30',
-      status: 'confirmed' as const,
+      status: 'confirmed' as BookingStatus,
       price: 1500
     },
     {
@@ -87,8 +100,27 @@ export function MyBookings() {
       date: new Date(Date.now() - 86400000).toLocaleDateString('ru-RU'),
       time: '10:00',
       endTime: '11:00',
-      status: 'completed' as const,
+      status: 'completed' as BookingStatus,
       price: 2000
+    },
+    {
+      id: '3',
+      service: {
+        id: '3',
+        name: 'Персональная тренировка',
+        description: 'Индивидуальное занятие с тренером',
+        price: { fixed: 3000 },
+        duration: 60,
+        category: 'fitness',
+        provider: 'Фитнес-клуб "Титан"',
+        location: 'пр. Мира, 100',
+        rating: 4.9
+      },
+      date: new Date(Date.now() + 172800000).toLocaleDateString('ru-RU'),
+      time: '18:00',
+      endTime: '19:00',
+      status: 'pending' as BookingStatus,
+      price: 3000
     }
   ];
 
@@ -99,7 +131,7 @@ export function MyBookings() {
   );
   
   const pastBookings = allBookings.filter(booking => 
-    booking.status === 'completed' || booking.status === 'cancelled'
+    booking.status === 'completed' || booking.status === 'cancelled' || booking.status === 'no-show'
   );
 
   const handleBookingDetails = (booking: any) => {
@@ -109,7 +141,7 @@ export function MyBookings() {
 
   const handleRepeatBooking = (booking: any) => {
     // Set the service and go to time selection
-    context.setSelectedService(booking.service);
+    setSelectedService(booking.service);
     setCurrentScreen('time-selection');
   };
 
@@ -121,34 +153,108 @@ export function MyBookings() {
     setCurrentScreen('settings');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleAction = (actionId: string, bookingId: string) => {
+    const booking = allBookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    setSelectedBookingForAction(booking);
+
+    switch (actionId) {
+      case 'confirm':
+        handleConfirmBooking(booking);
+        break;
+      case 'reschedule':
+        setRescheduleSheetOpen(true);
+        break;
+      case 'cancel':
+        setCancelDialogOpen(true);
+        break;
+      case 'no-show':
+        handleMarkNoShow(booking);
+        break;
+      case 'mark-completed':
+        handleMarkCompleted(booking);
+        break;
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return t.confirmed;
-      case 'pending':
-        return t.pending;
-      case 'completed':
-        return t.completed;
-      case 'cancelled':
-        return t.cancelled;
-      default:
-        return status;
-    }
+  const handleConfirmBooking = (booking: any) => {
+    // Update booking status to confirmed
+    const updatedBookings = allBookings.map(b =>
+      b.id === booking.id ? { ...b, status: 'confirmed' as BookingStatus } : b
+    );
+    setBookings(updatedBookings.filter(b => !mockBookings.find(mb => mb.id === b.id)));
+    
+    toast.success(t.bookingConfirmed, {
+      description: `${booking.service.name} - ${booking.date} ${booking.time}`,
+    });
+  };
+
+  const handleRescheduleConfirm = (newDate: string, newTime: string) => {
+    if (!selectedBookingForAction) return;
+
+    // Calculate end time based on duration
+    const [hours, minutes] = newTime.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + selectedBookingForAction.service.duration;
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    const newEndTime = `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+
+    // Update booking
+    const updatedBookings = allBookings.map(b =>
+      b.id === selectedBookingForAction.id
+        ? { ...b, date: newDate, time: newTime, endTime: newEndTime }
+        : b
+    );
+    setBookings(updatedBookings.filter(b => !mockBookings.find(mb => mb.id === b.id)));
+
+    toast.success(t.bookingRescheduled, {
+      description: `${selectedBookingForAction.service.name} - ${newDate} ${newTime}`,
+    });
+
+    setSelectedBookingForAction(null);
+  };
+
+  const handleCancelConfirm = (reason: string, comment?: string) => {
+    if (!selectedBookingForAction) return;
+
+    // Update booking status to cancelled
+    const updatedBookings = allBookings.map(b =>
+      b.id === selectedBookingForAction.id ? { ...b, status: 'cancelled' as BookingStatus } : b
+    );
+    setBookings(updatedBookings.filter(b => !mockBookings.find(mb => mb.id === b.id)));
+
+    toast.success(t.bookingCancelled, {
+      description: `${selectedBookingForAction.service.name}`,
+    });
+
+    setCancelDialogOpen(false);
+    setSelectedBookingForAction(null);
+  };
+
+  const handleMarkNoShow = (booking: any) => {
+    // Update booking status to no-show
+    const updatedBookings = allBookings.map(b =>
+      b.id === booking.id ? { ...b, status: 'no-show' as BookingStatus } : b
+    );
+    setBookings(updatedBookings.filter(b => !mockBookings.find(mb => mb.id === b.id)));
+
+    toast.success(t.bookingMarkedNoShow, {
+      description: `${booking.service.name}`,
+    });
+  };
+
+  const handleMarkCompleted = (booking: any) => {
+    // Update booking status to completed
+    const updatedBookings = allBookings.map(b =>
+      b.id === booking.id ? { ...b, status: 'completed' as BookingStatus } : b
+    );
+    setBookings(updatedBookings.filter(b => !mockBookings.find(mb => mb.id === b.id)));
+
+    toast.success(t.bookingCompleted, {
+      description: `${booking.service.name}`,
+    });
   };
 
   const EmptyState = ({ title, description }: { title: string; description: string }) => (
@@ -169,9 +275,15 @@ export function MyBookings() {
           <h3 className="font-medium">{booking.service.name}</h3>
           <p className="text-sm text-muted-foreground">{booking.service.provider}</p>
         </div>
-        <Badge className={`${getStatusColor(booking.status)} border-0 text-xs`}>
-          {getStatusText(booking.status)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <StatusChip status={booking.status} language={language} />
+          <BookingActionsMenu
+            bookingId={booking.id}
+            status={booking.status}
+            language={language}
+            onAction={handleAction}
+          />
+        </div>
       </div>
 
       <div className="space-y-2 mb-4">
@@ -198,19 +310,17 @@ export function MyBookings() {
             size="sm"
             variant="outline"
             onClick={() => handleBookingDetails(booking)}
-            className="h-8 text-xs px-3"
           >
-            <Eye className="w-3 h-3 mr-1" />
+            <Eye className="w-4 h-4 mr-1" />
             {t.details}
           </Button>
-          {booking.status === 'completed' && (
+          {(booking.status === 'completed' || booking.status === 'cancelled') && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => handleRepeatBooking(booking)}
-              className="h-8 text-xs px-3"
             >
-              <RotateCcw className="w-3 h-3 mr-1" />
+              <RotateCcw className="w-4 h-4 mr-1" />
               {t.repeat}
             </Button>
           )}
@@ -220,58 +330,92 @@ export function MyBookings() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 pt-16">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-medium">{t.myBookings}</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSettings}
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
+    <>
+      <div className="flex flex-col min-h-screen pb-24">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 pt-16">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-medium">{t.myBookings}</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSettings}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full">
+              <TabsTrigger value="upcoming" className="flex-1">
+                {t.upcoming}
+              </TabsTrigger>
+              <TabsTrigger value="past" className="flex-1">
+                {t.past}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <Tabs value={activeTab}>
+            <TabsContent value="upcoming" className="p-4 space-y-4 m-0">
+              {upcomingBookings.length === 0 ? (
+                <EmptyState
+                  title={t.noUpcomingBookings}
+                  description={t.bookingDescription}
+                />
+              ) : (
+                upcomingBookings.map((booking) => (
+                  <BookingCard key={booking.id} booking={booking} />
+                ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="past" className="p-4 space-y-4 m-0">
+              {pastBookings.length === 0 ? (
+                <EmptyState
+                  title={t.noPastBookings}
+                  description={t.bookingDescription}
+                />
+              ) : (
+                pastBookings.map((booking) => (
+                  <BookingCard key={booking.id} booking={booking} />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 pb-20">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-          <div className="sticky top-[73px] z-10 bg-background/95 backdrop-blur-sm border-b border-border/50">
-            <TabsList className="w-full grid grid-cols-2 m-4 mb-0">
-              <TabsTrigger value="upcoming">{t.upcoming}</TabsTrigger>
-              <TabsTrigger value="past">{t.past}</TabsTrigger>
-            </TabsList>
-          </div>
+      {/* Cancel Dialog */}
+      <CancelBookingDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        onConfirm={handleCancelConfirm}
+        language={language}
+        bookingName={selectedBookingForAction?.service.name}
+      />
 
-          <TabsContent value="upcoming" className="p-4 space-y-3 mt-4">
-            {upcomingBookings.length === 0 ? (
-              <EmptyState 
-                title={t.noUpcomingBookings} 
-                description={t.bookingDescription}
-              />
-            ) : (
-              upcomingBookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="past" className="p-4 space-y-3 mt-4">
-            {pastBookings.length === 0 ? (
-              <EmptyState 
-                title={t.noPastBookings} 
-                description={t.bookingDescription}
-              />
-            ) : (
-              pastBookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} />
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+      {/* Reschedule Sheet */}
+      {selectedBookingForAction && (
+        <RescheduleSheet
+          open={rescheduleSheetOpen}
+          onOpenChange={setRescheduleSheetOpen}
+          onConfirm={handleRescheduleConfirm}
+          language={language}
+          bookingData={{
+            serviceName: selectedBookingForAction.service.name,
+            provider: selectedBookingForAction.service.provider,
+            currentDate: selectedBookingForAction.date,
+            currentTime: selectedBookingForAction.time,
+            duration: selectedBookingForAction.service.duration,
+            price: selectedBookingForAction.price,
+          }}
+        />
+      )}
+    </>
   );
 }

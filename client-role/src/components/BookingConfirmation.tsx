@@ -44,6 +44,7 @@ export function BookingConfirmation() {
     selectedService,
     selectedDate,
     selectedTime,
+    selectedMaster,
     setCurrentBooking,
     bookings,
     setBookings
@@ -249,6 +250,25 @@ export function BookingConfirmation() {
                 )}
               </div>
             </div>
+
+            {/* Master (if selected) */}
+            {selectedMaster && (
+              <div className="flex items-center gap-3 ml-4">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                  {selectedMaster.avatar ? (
+                    <img src={selectedMaster.avatar} alt={selectedMaster.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs">{selectedMaster.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium">{selectedMaster.name}</p>
+                  {selectedMaster.skillBadge && (
+                    <p className="text-xs text-muted-foreground">{selectedMaster.skillBadge}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Date and Time */}
             <div className="flex items-start justify-between">

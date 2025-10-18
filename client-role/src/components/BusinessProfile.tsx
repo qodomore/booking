@@ -6,6 +6,7 @@ import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { toast } from 'sonner@2.0.3';
+import { OrgHeroCarousel } from './OrgHeroCarousel';
 
 export function BusinessProfile() {
   const context = useContext(AppContext);
@@ -83,6 +84,13 @@ export function BusinessProfile() {
 
   const t = texts[language];
 
+  // Mock hero images - in production, this would come from selectedBusiness.heroImages
+  const mockHeroImages = [
+    'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=450&fit=crop',
+    'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&h=450&fit=crop',
+    'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&h=450&fit=crop',
+  ];
+
   const handleServiceSelect = (service: any) => {
     setSelectedService(service);
     setCurrentScreen('service-details');
@@ -140,42 +148,44 @@ export function BusinessProfile() {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
-        {/* Business Info */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardContent className="p-4 space-y-4">
-            {selectedBusiness.image && (
-              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                <img 
-                  src={selectedBusiness.image} 
-                  alt={selectedBusiness.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            
-            <div>
-              <h2 className="mb-2">{selectedBusiness.name}</h2>
-              <p className="text-muted-foreground mb-3">{selectedBusiness.description}</p>
-              
-              <div className="flex flex-wrap gap-1 mb-3">
-                {selectedBusiness.categories.map((category) => (
-                  <Badge key={category} variant="secondary" className="text-xs">
-                    {category}
-                  </Badge>
-                ))}
-              </div>
+      <div className="space-y-6">
+        {/* Hero Carousel */}
+        <div className="px-4">
+          <OrgHeroCarousel
+            images={mockHeroImages}
+            alt={selectedBusiness.name}
+            autoPlay={true}
+            autoPlayInterval={5000}
+          />
+        </div>
 
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm">{selectedBusiness.address}</span>
+        {/* Business Info */}
+        <div className="px-4">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardContent className="p-4 space-y-3">
+              <div>
+                <h2 className="mb-2">{selectedBusiness.name}</h2>
+                <p className="text-muted-foreground mb-3">{selectedBusiness.description}</p>
+                
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {selectedBusiness.categories.map((category) => (
+                    <Badge key={category} variant="secondary" className="text-xs">
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{selectedBusiness.address}</span>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Services */}
-        <div>
+        <div className="px-4">
           <h3 className="mb-3">{t.services}</h3>
           <div className="space-y-3">
             {businessServices.map((service) => (
@@ -225,7 +235,7 @@ export function BusinessProfile() {
 
         {/* Resources */}
         {businessResources.length > 0 && (
-          <div>
+          <div className="px-4">
             <h3 className="mb-3">{t.resources}</h3>
             <div className="grid gap-3">
               {businessResources.map((resource) => (
@@ -263,7 +273,7 @@ export function BusinessProfile() {
         )}
 
         {/* Working Hours */}
-        <div>
+        <div className="px-4">
           <h3 className="mb-3">{t.workingHours}</h3>
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardContent className="p-4">
@@ -282,7 +292,7 @@ export function BusinessProfile() {
         </div>
 
         {/* Contact Information */}
-        <div>
+        <div className="px-4 pb-6">
           <h3 className="mb-3">{t.contact}</h3>
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardContent className="p-4 space-y-3">
